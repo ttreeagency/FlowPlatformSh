@@ -1,0 +1,20 @@
+{
+    "name": "ttree/flowplatformsh",
+    "description": "Flow framework utility package to parse Platform.sh variables",
+    "type": "neos-package",
+    "license": "MIT",
+    "require": {
+        "neos/flow": "^4.0",
+        "m1/env": "^2.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ttree\\FlowPlatformSh\\": "Classes/"
+        }
+    },
+    "extra": {
+        "neos": {
+            "package-key": "Ttree.FlowPlatformSh"
+        }
+    }
+}
