@@ -20,6 +20,19 @@ Create a file ```.platform.env``` in your distribution directory:
     
 Based on this configuration, this package will create env variables from ```PLATFORM_RELATIONSHIPS```. 
 
+Then you can edit your ```Settings.yaml``` to use the new env variables:
+
+    Neos:
+      Flow:
+        persistence:
+          backendOptions:
+            driver: pdo_pgsql
+            dbname: '%env:DATABASE_NAME%'
+            port: '%env:DATABASE_PORT%'
+            user: '%env:DATABASE_USER%'
+            password: '%env:DATABASE_PASSWORD%'
+            host: '%env:DATABASE_HOST%'
+            
 ## Acknowledgments
 
 Development sponsored by [ttree ltd - neos solution provider](http://ttree.ch).
