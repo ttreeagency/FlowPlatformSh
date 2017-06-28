@@ -12,9 +12,12 @@ Create a file ```.platform.env``` in your distribution directory:
     DATABASE_USER = database.0.username
     DATABASE_PASSWORD = database.0.password
     
-    DATABASE_HOST = redis.0.host
-    DATABASE_PORT = redis.0.port
+    REDIS_HOST = redis.0.host
+    REDIS_PORT = redis.0.port
 
+    REDIS_ALTERNATIVE_HOST = redis.1.host
+    REDIS_ALTERNATIVE_PORT = redis.1.port
+    
     ELASTICSEARCH_HOST = elasticsearch.0.host
     ELASTICSEARCH_PORT = elasticsearch.0.port
     
