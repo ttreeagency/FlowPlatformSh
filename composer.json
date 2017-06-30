@@ -13,10 +13,10 @@
         }
     },
     "extra": {
+        "class": "Ttree\\FlowPlatformSh\\Composer\\InstallerScripts",
         "neos": {
             "package-key": "Ttree.FlowPlatformSh"
         },
-        "class": "Ttree\\FlowPlatformSh\\Composer\\InstallerScripts",
         "branch-alias": {
           "dev-master": "1.0.x-dev"
         }
