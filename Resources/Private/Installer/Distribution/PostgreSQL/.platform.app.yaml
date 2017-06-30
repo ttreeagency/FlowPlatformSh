@@ -1,0 +1,39 @@
+name: app
+
+type: "php:7.1"
+
+build:
+  flavor: "composer"
+
+relationships:
+  database: "database:postgresql"
+  redis: "cache:redis"
+
+web:
+  locations:
+    "/":
+      root: "Web"
+      expires: -1
+      passthru: "/index.php"
+
+disk: 2048
+
+runtime:
+  extensions:
+    - pdo_pgsql
+    - imagick
+    - gmp
+    - redis
+
+mounts:
+  "/Data/Logs": "shared:files/data-logs"
+  "/Data/Persistent": "shared:files/data-persistent"
+  "/Web/_Resources": "shared:files/web"
+
+hooks:
+  build: |
+    php flow flow:package:rescan
+    php flow cache:warmup
+  deploy: |
+    php flow flow:cache:flush --force
+    php flow cache:warmup

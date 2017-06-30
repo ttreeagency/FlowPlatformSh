@@ -2,9 +2,22 @@
 
 Flow framework utility package to parse Platform.sh variables
 
-## How to use ?
+## Configure your distribution to deploy on Platform.sh
 
-Create a file ```.platform.env``` in your distribution directory:
+    composer require ttree/flowplatformsh
+    ./flow platform:booststrap --database MySQL|PostgreSQL
+
+Check and modify the configuration to match your project:
+
+- ```.platform/```
+- ```.platform.app.yaml```
+- ```.platform.env```
+
+## How to configure ```.platform.env```
+
+This file extract variables from ```PLATFORM_RELATIONSHIPS``` and create env variables that you can use in 
+your configuration (```Settings.yaml```, ```Caches.yaml```, ...). Every line contains the variable name and the
+path to get the variable content from ```PLATFORM_RELATIONSHIPS```.
 
     DATABASE_HOST = database.0.host
     DATABASE_PORT = database.0.port
@@ -21,8 +34,6 @@ Create a file ```.platform.env``` in your distribution directory:
     ELASTICSEARCH_HOST = elasticsearch.0.host
     ELASTICSEARCH_PORT = elasticsearch.0.port
     
-Based on this configuration, this package will create env variables from ```PLATFORM_RELATIONSHIPS```. 
-
 Then you can edit your ```Settings.yaml``` to use the new env variables:
 
     Neos:

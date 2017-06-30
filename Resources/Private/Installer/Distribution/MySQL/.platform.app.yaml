@@ -6,9 +6,8 @@ build:
   flavor: "composer"
 
 relationships:
-  database: "postgresql:postgresql"
-  redis: "redis:redis"
-  elasticsearch: "elasticsearch:elasticsearch"
+  database: "database:postgresql"
+  redis: "cache:redis"
 
 web:
   locations:

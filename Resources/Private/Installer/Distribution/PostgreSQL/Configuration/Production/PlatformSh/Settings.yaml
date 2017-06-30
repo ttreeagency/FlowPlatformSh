@@ -1,0 +1,25 @@
+Neos:
+  Flow:
+    persistence:
+      backendOptions:
+        driver: pdo_pgsql
+        dbname: '%env:DATABASE_NAME%'
+        port: '%env:DATABASE_PORT%'
+        user: '%env:DATABASE_USER%'
+        password: '%env:DATABASE_PASSWORD%'
+        host: '%env:DATABASE_HOST%'
+
+    resource:
+      targets:
+        localWebDirectoryPersistentResourcesTarget:
+          target: 'Neos\Flow\ResourceManagement\Target\FileSystemSymlinkTarget'
+          targetOptions:
+            relativeSymlinks: true
+            subdivideHashPathSegment: true
+        localWebDirectoryStaticResourcesTarget:
+          target: 'Neos\Flow\ResourceManagement\Target\FileSystemSymlinkTarget'
+          targetOptions:
+            relativeSymlinks: true
+
+  Imagine:
+    driver: Imagick

@@ -1,0 +1,6 @@
+database:
+    type: mysql:10.2
+    disk: 256
+
+cache:
+    type: redis:3.0

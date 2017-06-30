@@ -1,11 +1,9 @@
 {
-    "name": "ttree/flowplatformsh",
-    "description": "Flow framework utility package to parse Platform.sh variables",
+    "description": "",
     "type": "neos-package",
-    "license": "MIT",
+    "name": "ttree/flowplatformsh",
     "require": {
-        "neos/flow": "^4.0",
-        "m1/env": "^2.1"
+        "neos/flow": "*"
     },
     "autoload": {
         "psr-4": {
@@ -13,16 +11,8 @@
         }
     },
     "extra": {
-        "class": "Ttree\\FlowPlatformSh\\Composer\\InstallerScripts",
         "neos": {
             "package-key": "Ttree.FlowPlatformSh"
-        },
-        "branch-alias": {
-          "dev-master": "1.0.x-dev"
         }
-    },
-    "scripts": {
-      "post-update-cmd":  "Ttree\\FlowPlatformSh\\Composer\\InstallerScripts::postUpdateAndInstall",
-      "post-install-cmd": "Ttree\\FlowPlatformSh\\Composer\\InstallerScripts::postUpdateAndInstall"
     }
 }
