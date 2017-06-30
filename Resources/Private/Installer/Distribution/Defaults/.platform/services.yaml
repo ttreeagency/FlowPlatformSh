@@ -1,0 +1,10 @@
+postgresql:
+    type: postgresql:9.6
+    disk: 256
+
+redis:
+    type: redis:3.0
+
+elasticsearch:
+    type: elasticsearch:2.4
+    disk: 512
