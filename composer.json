@@ -4,7 +4,8 @@
     "license": "MIT",
     "description": "Platform.sh for Flow Framework made easy",
     "require": {
-        "neos/flow": "^4.0"
+        "neos/flow": "^4.0",
+        "m1/env": "^2.1"
     },
     "autoload": {
         "psr-4": {
