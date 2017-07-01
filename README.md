@@ -6,6 +6,7 @@ Flow framework utility package to parse Platform.sh variables
 
     composer require ttree/flowplatformsh
     ./flow platform:booststrap --database MySQL|PostgreSQL
+    platform variable:set env:FLOW_CONTEXT Production/PlatformSh
 
 Check and modify the configuration to match your project:
 
