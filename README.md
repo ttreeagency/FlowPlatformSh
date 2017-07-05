@@ -60,10 +60,13 @@ The options ```--publish``` and ```--clean``` run the resources publishing and c
 
 The options ```--database``` and ```--migrate``` clone the local database and run migration on the remote server.
 
+The options ```--snapshot``` create a snapshot of the current platform environement before the synchronzation.
+
 You should see this output:
 
     Local -> platform.sh
     
+        + Create Snapshot
         + Sync directory Data/Persistent
         + Publish resources
         + Clean resources
