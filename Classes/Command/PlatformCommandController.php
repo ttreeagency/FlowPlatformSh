@@ -145,9 +145,14 @@ class PlatformCommandController extends CommandController
             $this->outputLine('    // Command: <comment>%s</comment>', [$command]);
         }
 
-        $output = shell_exec($command . ' 2> /dev/null');
+        exec($command . ' 2> /dev/null', $output, $return);
 
-        return trim($output);
+        if ($return !== 0) {
+            $this->outputLine('<error>Oups, the following command failed:</error> %s', [$command]);
+            $this->quit($return);
+        }
+
+        return trim(implode(\PHP_EOL, $output));
     }
 
     protected function outputMounts(array $mounts): void
