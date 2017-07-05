@@ -53,18 +53,26 @@ class PlatformCommandController extends CommandController
     /**
      * Sync directory
      *
-     * @param string $directory
-     * @param bool $publish
-     * @param bool $clean
-     * @param bool $database
+     * @param string $directory Source direction
+     * @param bool $publish Run resource:publish on the remote serveur
+     * @param bool $clean Run resource:clean on the remote serveur
+     * @param bool $database Clone the database to the remote server
+     * @param bool $migrate Run doctrine:migrate on the remote serveur
+     * @param bool $debug Show debug output
+     * @param bool $snapshot Create a snapshot before synchronization
      * @param string $configuration
      */
-    public function syncCommand(string $directory = null, bool $publish = false, bool $clean = false, bool $database = false, bool $migrate = false, bool $debug = false, string $configuration = '.platform.app.yaml'): void
+    public function syncCommand(string $directory = null, bool $publish = false, bool $clean = false, bool $database = false, bool $migrate = false, bool $debug = false, bool $snapshot = false, string $configuration = '.platform.app.yaml'): void
     {
 
         $this->outputLine();
         $this->outputLine('<b>Local -> platform.sh</b>');
         $this->outputLine();
+
+        if ($snapshot) {
+            $this->outputLine('    + <info>Create snapshot</info>');
+            $this->executeShellCommand('platform snapshot:create', [], $debug);
+        }
 
         if ($directory) {
             $directory = trim($directory, '/');
