@@ -55,14 +55,13 @@ class PlatformCommandController extends CommandController
      *
      * @param string $directory Source direction
      * @param bool $publish Run resource:publish on the remote serveur
-     * @param bool $clean Run resource:clean on the remote serveur
      * @param bool $database Clone the database to the remote server
      * @param bool $migrate Run doctrine:migrate on the remote serveur
      * @param bool $debug Show debug output
      * @param bool $snapshot Create a snapshot before synchronization
      * @param string $configuration
      */
-    public function syncCommand(string $directory = null, bool $publish = false, bool $clean = false, bool $database = false, bool $migrate = false, bool $debug = false, bool $snapshot = false, string $configuration = '.platform.app.yaml'): void
+    public function syncCommand(string $directory = null, bool $publish = false, bool $database = false, bool $migrate = false, bool $debug = false, bool $snapshot = false, string $configuration = '.platform.app.yaml'): void
     {
 
         $this->outputLine();
@@ -108,10 +107,6 @@ class PlatformCommandController extends CommandController
         if ($publish) {
             $this->outputLine('    + <info>Publish resources</info>');
             $this->executeShellCommand('platform ssh "./flow resource:publish"', [], $debug);
-        }
-        if ($clean) {
-            $this->outputLine('    + <info>Clean resources</info>');
-            $this->executeShellCommand('platform ssh "./flow resource:clean"', [], $debug);
         }
         if ($database) {
             $this->outputLine('    + <info>Clone database</info>');

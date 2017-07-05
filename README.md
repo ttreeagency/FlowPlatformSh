@@ -52,11 +52,11 @@ Then you can edit your ```Settings.yaml``` to use the new env variables:
 
 You can sync a local directory to platform with the following command:
 
-    ./flow platform:sync --directory Data/Persistent --publish --clean --database --migrate
+    ./flow platform:sync --directory Data/Persistent --publish --database --migrate
     
 You can provide the path to your local ```.platform.app.yaml``` with the paramater ```--configuration```. 
 
-The options ```--publish``` and ```--clean``` run the resources publishing and cleanup after the rsync command on the remote server.
+The options ```--publish``` run the resources publishing after the rsync command on the remote server.
 
 The options ```--database``` and ```--migrate``` clone the local database and run migration on the remote server.
 
@@ -69,7 +69,6 @@ You should see this output:
         + Create Snapshot
         + Sync directory Data/Persistent
         + Publish resources
-        + Clean resources
         + Clone database
         + Migrate database
 
