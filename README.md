@@ -47,7 +47,19 @@ Then you can edit your ```Settings.yaml``` to use the new env variables:
             user: '%env:DATABASE_USER%'
             password: '%env:DATABASE_PASSWORD%'
             host: '%env:DATABASE_HOST%'
-            
+
+## Migrate resources
+
+You can sync a local directory to platform with the following command:
+
+    ./flow platform:rsync --directory Data/Persistent --publish --clean
+    
+You can provide the path to your local ```.platform.app.yaml``` with the paramater ```--configuration```. 
+
+The package check if the given path is mounted on a read write filesystem (mounts) before accepting the command.
+
+The options ```--publish``` and ```--clean``` run the resources publishing and cleanup after the rsync command on the remote server.
+
 ## Acknowledgments
 
 Development sponsored by [ttree ltd - neos solution provider](http://ttree.ch).
