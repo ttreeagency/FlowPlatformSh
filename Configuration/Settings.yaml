@@ -1,0 +1,6 @@
+Ttree:
+  FlowPlatformSh:
+    commands:
+      rsync:
+        '*': 'rsync -az ./%1$s `platform ssh --pipe`:/app/%1$s/'
+        'Darwin': 'rsync -az --iconv=utf-8-mac,utf-8 ./%1$s `platform ssh --pipe`:/app/%1$s/'

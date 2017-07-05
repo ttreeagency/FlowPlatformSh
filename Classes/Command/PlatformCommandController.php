@@ -20,6 +20,12 @@ class PlatformCommandController extends CommandController
     protected $packageManager;
 
     /**
+     * @var array
+     * @Flow\InjectConfiguration(path="commands.rsync")
+     */
+    protected $rsyncCommands = [];
+
+    /**
      * Initialize configuration
      *
      * @param string $database Default database server, can be MySQL or PostgreSQL
@@ -63,11 +69,12 @@ class PlatformCommandController extends CommandController
 
         $os = \php_uname('s');
 
-        if ($os === 'Darwin') {
-            $rsyncCommand = 'rsync -az --iconv=utf-8-mac,utf-8 ./%1$s `platform ssh --pipe`:/app/%1$s/';
+        if (isset($this->rsyncCommands[$os])) {
+            $rsyncCommand = $this->rsyncCommands[$os];
         } else {
-            $rsyncCommand = 'rsync -az ./%1$s `platform ssh --pipe`:/app/%1$s/';
+            $rsyncCommand = $this->rsyncCommands['*'];
         }
+
         $this->executeShellCommand($rsyncCommand, [$directory], true);
 
         if ($publish) {
