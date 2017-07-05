@@ -48,17 +48,27 @@ Then you can edit your ```Settings.yaml``` to use the new env variables:
             password: '%env:DATABASE_PASSWORD%'
             host: '%env:DATABASE_HOST%'
 
-## Migrate resources
+## Migrate local project to platform.sh
 
 You can sync a local directory to platform with the following command:
 
-    ./flow platform:rsync --directory Data/Persistent --publish --clean
+    ./flow platform:sync --directory Data/Persistent --publish --clean --database --migrate
     
 You can provide the path to your local ```.platform.app.yaml``` with the paramater ```--configuration```. 
 
-The package check if the given path is mounted on a read write filesystem (mounts) before accepting the command.
-
 The options ```--publish``` and ```--clean``` run the resources publishing and cleanup after the rsync command on the remote server.
+
+The options ```--database``` and ```--migrate``` clone the local database and run migration on the remote server.
+
+You should see this output:
+
+    Local -> platform.sh
+    
+        + Sync directory Data/Persistent
+        + Publish resources
+        + Clean resources
+        + Clone database
+        + Migrate database
 
 ## Acknowledgments
 

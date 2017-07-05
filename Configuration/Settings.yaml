@@ -2,5 +2,10 @@ Ttree:
   FlowPlatformSh:
     commands:
       rsync:
-        '*': 'rsync -az ./%1$s `platform ssh --pipe`:/app/%1$s/'
-        'Darwin': 'rsync -az --iconv=utf-8-mac,utf-8 ./%1$s `platform ssh --pipe`:/app/%1$s/'
+        '*': 'rsync -az ./@DIRECTORY@ `platform ssh --pipe`:/app/@DIRECTORY@/'
+        'Darwin': 'rsync -az --iconv=utf-8-mac,utf-8 ./@DIRECTORY@ `platform ssh --pipe`:/app/@DIRECTORY@/'
+      'dump':
+        'pgsql':
+          '*': 'PGPASSWORD=@PASSWORD@ pg_dump -c -b -d @DBNAME@ -U @USER@'
+        'mysql':
+          '*': 'mysqldump --host=@HOST@ -u@USER@ -p@PASSWORD@ @DBNAME@'
