@@ -2,11 +2,18 @@
 namespace Ttree\FlowPlatformSh\Command;
 
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Cli\Command;
 use Neos\Flow\Cli\CommandController;
+use Neos\Flow\Configuration\ConfigurationManager;
+use Neos\Flow\Core\Booting\Scripts;
+use Neos\Flow\Exception;
 use Neos\Flow\Package\PackageManager;
+use Neos\Flow\Reflection\ReflectionService;
 use Neos\Utility\Arrays;
 use Neos\Utility\Files;
 use Symfony\Component\Yaml\Yaml;
+use Ttree\FlowPlatformSh\Annotations\BuildHook;
+use Ttree\FlowPlatformSh\Annotations\DeployHook;
 
 /**
  * @Flow\Scope("singleton")
@@ -24,6 +31,18 @@ class PlatformCommandController extends CommandController
      * @Flow\InjectConfiguration(path="persistence.backendOptions", package="Neos.Flow")
      */
     protected $databasesConfiguration;
+
+    /**
+     * @var ReflectionService
+     * @Flow\Inject
+     */
+    protected $reflectionService;
+
+    /**
+     * @var ConfigurationManager
+     * @Flow\Inject
+     */
+    protected $configurationManager;
 
     /**
      * @var array
@@ -51,7 +70,7 @@ class PlatformCommandController extends CommandController
     }
 
     /**
-     * Sync directory
+     * Push local Resources + Database
      *
      * @param string $directory Source direction
      * @param bool $publish Run resource:publish on the remote serveur
@@ -61,7 +80,7 @@ class PlatformCommandController extends CommandController
      * @param bool $snapshot Create a snapshot before synchronization
      * @param string $configuration
      */
-    public function syncCommand(string $directory = null, bool $publish = false, bool $database = false, bool $migrate = false, bool $debug = false, bool $snapshot = false, string $configuration = '.platform.app.yaml'): void
+    public function pushCommand(string $directory = null, bool $publish = false, bool $database = false, bool $migrate = false, bool $debug = false, bool $snapshot = false, string $configuration = '.platform.app.yaml'): void
     {
 
         $this->outputLine();
@@ -134,6 +153,40 @@ class PlatformCommandController extends CommandController
         if ($migrate) {
             $this->outputLine('    + <info>Migrate database</info>');
             $this->executeShellCommand('platform ssh "./flow doctrine:migrate"', [], $debug);
+        }
+    }
+
+    /**
+     * Run command for build hook
+     */
+    public function buildCommand()
+    {
+        $this->executeAnnotatedCommands(BuildHook::class);
+    }
+
+    /**
+     * Run command for deploy hook
+     */
+    public function deployCommand()
+    {
+        $this->executeAnnotatedCommands(DeployHook::class);
+    }
+
+    protected function executeAnnotatedCommands(string $annotationClassName): void
+    {
+        foreach ($this->reflectionService->getClassesContainingMethodsAnnotatedWith($annotationClassName) as $className) {
+            foreach ($this->reflectionService->getMethodsAnnotatedWith($className, $annotationClassName) as $methodName) {
+                $this->commandExecutor(new Command($className, substr($methodName, 0, -7)));
+            }
+        }
+    }
+
+    protected function commandExecutor(Command $command): void
+    {
+        $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.Flow');
+        $executed = Scripts::executeCommand($command->getCommandIdentifier(), $settings, true);
+        if ($executed !== true) {
+            throw new Exception(sprintf('The command "%s" return an error, check your logs.', $command->getCommandIdentifier()), 1346759486);
         }
     }
 

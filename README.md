@@ -6,15 +6,52 @@ Flow framework utility package to parse Platform.sh variables
 
     composer require ttree/flowplatformsh
     ./flow platform:booststrap --database MySQL|PostgreSQL
-    platform variable:set env:FLOW_REWRITEURLS 1
-    platform variable:set env:FLOW_CONTEXT Production/PlatformSh
-    platform variable:set env:FLOW_PATH_TEMPORARY_BASE /tmp
 
 Check and modify the configuration to match your project:
 
 - ```.platform/```
 - ```.platform.app.yaml```
 - ```.platform.env```
+
+## Run a command during Build or Deploy hook
+
+You can use annotations to execute any CLI command. 
+
+- For BuildHook: ```\Ttree\FlowPlatformSh\Annotations\BuildHook```
+- For DeployHook: ```\Ttree\FlowPlatformSh\Annotations\DeployHook```
+
+```
+    use Neos\Flow\Annotations as Flow;
+    use Ttree\FlowPlatformSh\Annotations as PlatformSh;
+    
+    /**
+     * @Flow\Scope("singleton")
+     */
+    class PlatformCommandController extends CommandController
+    {
+        /**
+         * @Flow\Internal
+         * @PlatformSh\DeployHook
+         */
+        public function doSomethingDuringDeployHookCommand()
+        {
+            ...
+        }
+    
+        /**
+         * @Flow\Internal
+         * @PlatformSh\BuildHook
+         */
+        public function doSomethingDuringBuildHookCommand()
+        {
+            ...
+        }
+    }
+```
+
+Check that your ```.platform.app.yaml``` execute ```php flow platform:build``` and ```php flow platform:build``` in the respective hook.
+
+Check the command controller in [Ttree.NeosPlatformSh](https://github.com/ttreeagency/NeosPlatformSh).
 
 ## How to configure ```.platform.env```
 
