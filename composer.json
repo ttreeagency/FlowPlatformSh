@@ -16,5 +16,8 @@
         "neos": {
             "package-key": "Ttree.FlowPlatformSh"
         }
+        "branch-alias": {
+          "dev-master": "1.0.x-dev"
+        }
     }
 }
