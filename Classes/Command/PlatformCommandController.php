@@ -158,33 +158,53 @@ class PlatformCommandController extends CommandController
 
     /**
      * Run command for build hook
+     * @param bool $debug Debug command identifier
      */
-    public function buildCommand()
+    public function buildCommand($debug = false)
     {
-        $this->executeAnnotatedCommands(BuildHook::class);
+        $this->outputLine('<b>Run build hook commands</b>');
+        $this->executeAnnotatedCommands(BuildHook::class, $debug);
     }
 
     /**
      * Run command for deploy hook
+     * @param bool $debug Debug command identifier
      */
-    public function deployCommand()
+    public function deployCommand($debug = false)
     {
-        $this->executeAnnotatedCommands(DeployHook::class);
+        $this->outputLine('<b>Run deploy hook commands</b>');
+        $this->executeAnnotatedCommands(DeployHook::class, $debug);
     }
 
-    protected function executeAnnotatedCommands(string $annotationClassName): void
+    protected function executeAnnotatedCommands(string $annotationClassName, bool $debug): void
     {
+        $commands = [];
         foreach ($this->reflectionService->getClassesContainingMethodsAnnotatedWith($annotationClassName) as $className) {
             foreach ($this->reflectionService->getMethodsAnnotatedWith($className, $annotationClassName) as $methodName) {
-                $this->commandExecutor(new Command($className, substr($methodName, 0, -7)));
+                $command = new Command($className, substr($methodName, 0, -7));
+                if ($debug === true) {
+                    $this->outputLine('~ <info>[INFO] Command detected in %s:%s</info>', [$className, $methodName]);
+                }
+                $commands[] = $command;
             }
+        }
+
+        if ($commands !== []) {
+            foreach ($commands as $command) {
+                $this->outputLine('~ <info>[INFO] Execute command %s</info>', [$command->getCommandIdentifier()]);
+                if ($debug === false) {
+                    $this->commandExecutor($command);
+                }
+            }
+        } else {
+            $this->outputLine('~ <info>[INFO] No command attached to the current hook</info>');
         }
     }
 
     protected function commandExecutor(Command $command): void
     {
         $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.Flow');
-        $executed = Scripts::executeCommand($command->getCommandIdentifier(), $settings, true);
+        $executed = Scripts::executeCommand($command->getCommandIdentifier(), $settings, false);
         if ($executed !== true) {
             throw new Exception(sprintf('The command "%s" return an error, check your logs.', $command->getCommandIdentifier()), 1346759486);
         }
