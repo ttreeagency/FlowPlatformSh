@@ -87,11 +87,11 @@ Then you can edit your ```Settings.yaml``` to use the new env variables:
             password: '%env:DATABASE_PASSWORD%'
             host: '%env:DATABASE_HOST%'
 
-## Migrate local project to platform.sh
+## Push local project data to platform.sh
 
-You can sync a local directory to platform with the following command:
+You can sync a local project data (resources and databases) to platform with the following command:
 
-    ./flow platform:sync --directory Data/Persistent --publish --database --migrate
+    ./flow platform:push --directory Data/Persistent --publish --database --migrate --environment master
     
 You can provide the path to your local ```.platform.app.yaml``` with the paramater ```--configuration```. 
 
@@ -100,6 +100,10 @@ The options ```--publish``` run the resources publishing after the rsync command
 The options ```--database``` and ```--migrate``` clone the local database and run migration on the remote server.
 
 The options ```--snapshot``` create a snapshot of the current platform environement before the synchronzation.
+
+The options ```--environment```, default ```master```, allow to target specific platform environment.
+
+**Warning**: Currently we push only files and databases, if you use ElasticSearch you need to rebuild the index manually.
 
 You should see this output:
 

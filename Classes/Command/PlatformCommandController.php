@@ -87,7 +87,7 @@ class PlatformCommandController extends CommandController
      * @param bool $snapshot Create a snapshot before synchronization
      * @param string $configuration
      */
-    public function pushCommand(string $directory = null, bool $publish = false, bool $database = false, bool $migrate = false, bool $debug = false, bool $snapshot = false, string $configuration = '.platform.app.yaml'): void
+    public function pushCommand(string $directory = null, bool $publish = false, bool $database = false, bool $migrate = false, bool $debug = false, bool $snapshot = false, string $configuration = '.platform.app.yaml', string $environment = 'master'): void
     {
 
         $this->outputLine();
@@ -96,7 +96,9 @@ class PlatformCommandController extends CommandController
 
         if ($snapshot) {
             $this->outputLine('    + <info>Create snapshot</info>');
-            $this->executeShellCommand('platform snapshot:create', [], $debug);
+            $this->executeShellCommand('platform snapshot:create -e @ENVIRONMENT@', [
+                '@ENVIRONMENT@' => $environment
+            ], $debug);
         }
 
         if ($directory) {
@@ -127,39 +129,47 @@ class PlatformCommandController extends CommandController
             }
             $rsyncCommand = \str_replace(['@DIRECTORY@'], [$directory], $rsyncCommand);
 
-            $this->executeShellCommand($rsyncCommand, [], $debug);
+            $this->executeShellCommand($rsyncCommand, [
+                '@ENVIRONMENT@' => $environment
+            ], $debug);
         }
 
         if ($publish) {
             $this->outputLine('    + <info>Publish resources</info>');
-            $this->executeShellCommand('platform ssh "./flow resource:publish"', [], $debug);
+            $this->executeShellCommand('platform ssh -e @ENVIRONMENT@ "./flow resource:publish"', [
+                '@ENVIRONMENT@' => $environment
+            ], $debug);
         }
         if ($database) {
             $this->outputLine('    + <info>Clone database</info>');
-            list ($_, $driver) = \explode('_', $this->databasesConfiguration['driver']);
+            $driver = \explode('_', $this->databasesConfiguration['driver'])[1];
             if (!isset($this->dumpCommands[$driver])) {
                 $this->outputLine('<error>No dump command for the current driver (%s) </error>', [$this->databasesConfiguration['driver']]);
             }
-            $dumpCommand = \str_replace([
-                '@HOST@',
-                '@DBNAME@',
-                '@USER@',
-                '@PASSWORD@',
-                '@CHARSET@',
-            ], [
-                $this->databasesConfiguration['host'],
-                $this->databasesConfiguration['dbname'],
-                $this->databasesConfiguration['user'],
-                $this->databasesConfiguration['password'],
-                $this->databasesConfiguration['charset'],
+
+            $dumpCommand = $this->replace([
+                '@HOST@' => $this->databasesConfiguration['host'],
+                '@DBNAME@' => $this->databasesConfiguration['dbname'],
+                '@USER@' => $this->databasesConfiguration['user'],
+                '@PASSWORD@' => $this->databasesConfiguration['password'],
+                '@CHARSET@' => $this->databasesConfiguration['charset'],
             ], $this->dumpCommands[$driver]['*']);
-            $this->executeShellCommand('%s > Data/Temporary/dump.sql', [$dumpCommand], $debug);
-            $this->executeShellCommand('platform sql < Data/Temporary/dump.sql', [], $debug);
+
+            $this->executeShellCommand('@DUMP_COMMAND@ > Data/Temporary/dump.sql', [
+                '@DUMP_COMMAND@' => $dumpCommand,
+                '@ENVIRONMENT@' => $environment
+            ], $debug);
+
+            $this->executeShellCommand('platform sql -e @ENVIRONMENT@ < Data/Temporary/dump.sql', [
+                '@ENVIRONMENT@' => $environment
+            ], $debug);
             unlink('Data/Temporary/dump.sql');
         }
         if ($migrate) {
             $this->outputLine('    + <info>Migrate database</info>');
-            $this->executeShellCommand('platform ssh "./flow doctrine:migrate"', [], $debug);
+            $this->executeShellCommand('platform ssh -e @ENVIRONMENT@ "./flow doctrine:migrate"', [
+                '@ENVIRONMENT@' => $environment
+            ], $debug);
         }
     }
 
@@ -219,7 +229,9 @@ class PlatformCommandController extends CommandController
 
     protected function executeShellCommand(string $command, array $arguments = [], bool $debug = false): string
     {
-        $command = \vsprintf($command, $arguments);
+        if ($arguments !== []) {
+            $command = $this->replace($arguments, $command);
+        }
 
         if ($debug) {
             $this->outputLine('    // Command: <comment>%s</comment>', [$command]);
@@ -233,6 +245,13 @@ class PlatformCommandController extends CommandController
         }
 
         return trim(implode(\PHP_EOL, $output));
+    }
+
+    protected function replace(array $search, string $string) {
+        if ($search === []) {
+            return $string;
+        }
+        return \str_replace(\array_keys($search), \array_values($search), $string);
     }
 
     protected function outputMounts(array $mounts): void
