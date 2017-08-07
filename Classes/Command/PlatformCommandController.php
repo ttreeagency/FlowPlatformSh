@@ -59,14 +59,21 @@ class PlatformCommandController extends CommandController
     /**
      * Initialize configuration
      *
+     * @param string $id Platform.sh Project ID
+     * @param string $host Platform.sh Region (like eu.platform.sh)
      * @param string $database Default database server, can be MySQL or PostgreSQL
      */
-    public function booststrapCommand(string $database)
+    public function bootstrapCommand(string $id, string $host, string $database)
     {
         $package = $this->packageManager->createPackage('Ttree.FlowPlatformSh')->getPackagePath();
         $distribution = $package . 'Resources/Private/Installer/Distribution/' . $database . '/';
         $this->outputLine($distribution);
         Files::copyDirectoryRecursively($distribution, \FLOW_PATH_ROOT, true, true);
+        $project = [
+            'id: ' . $id,
+            'host: ' . $host,
+        ];
+        \file_put_contents(\FLOW_PATH_ROOT . '.platform/local/project.yaml', \implode(chr(10), $project));
     }
 
     /**

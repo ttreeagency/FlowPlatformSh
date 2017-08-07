@@ -5,7 +5,7 @@ Flow framework utility package to parse Platform.sh variables
 ## Configure your distribution to deploy on Platform.sh
 
     composer require ttree/flowplatformsh
-    ./flow platform:booststrap --database MySQL|PostgreSQL
+    ./flow platform:bootstrap --id fajq56c55mc5s --host eu.platform.sh --database MySQL|PostgreSQL
 
 Check and modify the configuration to match your project:
 
