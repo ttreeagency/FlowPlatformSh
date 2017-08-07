@@ -115,6 +115,19 @@ You should see this output:
         + Clone database
         + Migrate database
 
+### I use docker locally to host my database, the push command failed
+
+You can use a custom dump command, by editing your ```Settings.yaml```, by example for PostgreSQL:
+
+	Ttree:
+      FlowPlatformSh:
+        commands:
+          'dump':
+            'pgsql':
+              '*': 'docker exec -e "PGPASSWORD=@PASSWORD@" -t [docker-container-name] pg_dump -c -b -d @DBNAME@ -U @USER@'
+
+Replace ```[docker-container-name]``` by the name or the identifier of the PostgreSQL container.
+
 ## Acknowledgments
 
 Development sponsored by [ttree ltd - neos solution provider](http://ttree.ch).
