@@ -1,5 +1,13 @@
 Ttree:
   FlowPlatformSh:
+    buildHooks:
+      commands:
+        'flow:package:rescan': true
+    deployHooks:
+      commands:
+        'flow:cache:flush': true
+        'flow:cache:warmup': true
+        'flow:doctrine:migrate': true
     commands:
       rsync:
         '*': 'rsync -az ./@DIRECTORY@/ `platform ssh -e @ENVIRONMENT@ --pipe`:/app/@DIRECTORY@'

@@ -2,18 +2,14 @@
 namespace Ttree\FlowPlatformSh\Command;
 
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Cli\Command;
 use Neos\Flow\Cli\CommandController;
-use Neos\Flow\Configuration\ConfigurationManager;
-use Neos\Flow\Core\Booting\Scripts;
-use Neos\Flow\Exception;
 use Neos\Flow\Package\PackageManager;
-use Neos\Flow\Reflection\ReflectionService;
 use Neos\Utility\Arrays;
 use Neos\Utility\Files;
 use Symfony\Component\Yaml\Yaml;
 use Ttree\FlowPlatformSh\Annotations\BuildHook;
 use Ttree\FlowPlatformSh\Annotations\DeployHook;
+use Ttree\FlowPlatformSh\Service\CommandService;
 
 /**
  * @Flow\Scope("singleton")
@@ -33,16 +29,10 @@ class PlatformCommandController extends CommandController
     protected $databasesConfiguration;
 
     /**
-     * @var ReflectionService
+     * @var CommandService
      * @Flow\Inject
      */
-    protected $reflectionService;
-
-    /**
-     * @var ConfigurationManager
-     * @Flow\Inject
-     */
-    protected $configurationManager;
+    protected $commandService;
 
     /**
      * @var array
@@ -55,6 +45,18 @@ class PlatformCommandController extends CommandController
      * @Flow\InjectConfiguration(path="commands.dump")
      */
     protected $dumpCommands = [];
+
+    /**
+     * @var array
+     * @Flow\InjectConfiguration(path="buildHooks.commands")
+     */
+    protected $buildHooks = [];
+
+    /**
+     * @var array
+     * @Flow\InjectConfiguration(path="deployHooks.commands")
+     */
+    protected $deployHooks = [];
 
     /**
      * Initialize configuration
@@ -180,7 +182,7 @@ class PlatformCommandController extends CommandController
     public function buildCommand($debug = false)
     {
         $this->outputLine('<b>Run build hook commands</b>');
-        $this->executeAnnotatedCommands(BuildHook::class, $debug);
+        $this->commandService->executeHooks($this->buildHooks, function (...$args) { $this->outputLine(...$args); } );
     }
 
     /**
@@ -190,41 +192,7 @@ class PlatformCommandController extends CommandController
     public function deployCommand($debug = false)
     {
         $this->outputLine('<b>Run deploy hook commands</b>');
-        $this->executeAnnotatedCommands(DeployHook::class, $debug);
-    }
-
-    protected function executeAnnotatedCommands(string $annotationClassName, bool $debug): void
-    {
-        $commands = [];
-        foreach ($this->reflectionService->getClassesContainingMethodsAnnotatedWith($annotationClassName) as $className) {
-            foreach ($this->reflectionService->getMethodsAnnotatedWith($className, $annotationClassName) as $methodName) {
-                $command = new Command($className, substr($methodName, 0, -7));
-                if ($debug === true) {
-                    $this->outputLine('~ <info>[INFO] Command detected in %s:%s</info>', [$className, $methodName]);
-                }
-                $commands[] = $command;
-            }
-        }
-
-        if ($commands !== []) {
-            foreach ($commands as $command) {
-                $this->outputLine('~ <info>[INFO] Execute command %s</info>', [$command->getCommandIdentifier()]);
-                if ($debug === false) {
-                    $this->commandExecutor($command);
-                }
-            }
-        } else {
-            $this->outputLine('~ <info>[INFO] No command attached to the current hook</info>');
-        }
-    }
-
-    protected function commandExecutor(Command $command): void
-    {
-        $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.Flow');
-        $executed = Scripts::executeCommand($command->getCommandIdentifier(), $settings, false);
-        if ($executed !== true) {
-            throw new Exception(sprintf('The command "%s" return an error, check your logs.', $command->getCommandIdentifier()), 1346759486);
-        }
+        $this->commandService->executeHooks($this->deployHooks, function (...$args) { $this->outputLine(...$args); } );
     }
 
     protected function executeShellCommand(string $command, array $arguments = [], bool $debug = false): string

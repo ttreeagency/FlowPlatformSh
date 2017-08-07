@@ -15,41 +15,50 @@ Check and modify the configuration to match your project:
 
 ## Run a command during Build or Deploy hook
 
-You can use annotations to execute any CLI command. 
+You can run any Flow CLI commands during build or deploy hook. Remember that during Build hook you don't have access to
+services (database, cache, ...). This the default configuration:
 
-- For BuildHook: ```\Ttree\FlowPlatformSh\Annotations\BuildHook```
-- For DeployHook: ```\Ttree\FlowPlatformSh\Annotations\DeployHook```
+	Ttree:
+      FlowPlatformSh:
+        buildHooks:
+          commands:
+            'flow:package:rescan': true
+        deployHooks:
+          commands:
+            'flow:cache:flush': true
+            'flow:cache:warmup': true
+            'flow:doctrine:migrate': true
 
-```
-    use Neos\Flow\Annotations as Flow;
-    use Ttree\FlowPlatformSh\Annotations as PlatformSh;
-    
-    /**
-     * @Flow\Scope("singleton")
-     */
-    class PlatformCommandController extends CommandController
-    {
-        /**
-         * @Flow\Internal
-         * @PlatformSh\DeployHook
-         */
-        public function doSomethingDuringDeployHookCommand()
-        {
-            ...
-        }
-    
-        /**
-         * @Flow\Internal
-         * @PlatformSh\BuildHook
-         */
-        public function doSomethingDuringBuildHookCommand()
-        {
-            ...
-        }
-    }
-```
+You can set the value to ```false``` to disable a command. If the value is an array, the array is passed as command arguments:
+
+	Ttree:
+	  FlowPlatformSh:
+		deployHooks:
+		  commands:
+			'ttree.neosplatformsh:platform:createadminaccount':
+			  username: 'admin'
+			  password: 'changeme'
+			'ttree.neosplatformsh:platform:importsitepackage':
+			  package: 'Neos.Demo'
 
 Check that your ```.platform.app.yaml``` execute ```php flow platform:build``` and ```php flow platform:build``` in the respective hook.
+
+You can use a custom FLOW_CONTEXT during the build hook to avoid issue when Flow try to connect to redis cache, like this ```.platform.app.yaml```:
+
+	variables:
+      env:
+        FLOW_CONTEXT: 'Production/PlatformSh'
+        FLOW_PATH_TEMPORARY_BASE: '/tmp'
+        FLOW_REWRITEURLS: 1
+        
+	hooks:
+	  build: |
+		set -e
+		export FLOW_CONTEXT=${FLOW_CONTEXT}Build
+		php flow platform:build
+	  deploy: |
+		set -e
+		php flow platform:deploy
 
 Check the command controller in [Ttree.NeosPlatformSh](https://github.com/ttreeagency/NeosPlatformSh).
 
