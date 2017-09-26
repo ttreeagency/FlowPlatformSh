@@ -4,6 +4,7 @@
     "license": "MIT",
     "description": "Platform.sh for Flow Framework made easy",
     "require": {
+        "php": "^7.1",
         "neos/flow": "^4.0",
         "m1/env": "^2.1"
     },

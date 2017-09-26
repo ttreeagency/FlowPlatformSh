@@ -9,6 +9,7 @@ use Neos\Utility\Files;
 use Symfony\Component\Yaml\Yaml;
 use Ttree\FlowPlatformSh\Annotations\BuildHook;
 use Ttree\FlowPlatformSh\Annotations\DeployHook;
+use Ttree\FlowPlatformSh\Domain\Model\ShellCommands;
 use Ttree\FlowPlatformSh\Service\CommandService;
 
 /**
@@ -36,15 +37,9 @@ class PlatformCommandController extends CommandController
 
     /**
      * @var array
-     * @Flow\InjectConfiguration(path="commands.rsync")
+     * @Flow\InjectConfiguration(path="commands")
      */
-    protected $rsyncCommands = [];
-
-    /**
-     * @var array
-     * @Flow\InjectConfiguration(path="commands.dump")
-     */
-    protected $dumpCommands = [];
+    protected $commandConfiguration;
 
     /**
      * @var array
@@ -79,100 +74,193 @@ class PlatformCommandController extends CommandController
     }
 
     /**
-     * Push local Resources + Database
+     * platform.sh -> Local
+     *
+     * @param string|null $directory
+     * @param bool $publish
+     * @param bool $database
+     * @param bool $migrate
+     * @param bool $flush
+     * @param $dryRun $debug
+     * @param string $configuration
+     * @param string $environment
+     * @param bool $yes
+     */
+    public function pullCommand(string $directory = null, bool $publish = false, bool $database = false, bool $migrate = false, bool $flush = false, bool $dryRun = false, string $configuration = '.platform.app.yaml', string $environment = 'master', bool $yes = false)
+    {
+        $this->askForUserAgreement($yes, '<info>Are you sure, all local data will be deleted ?</info> (yes|<b>no</b>) ', '<b>platform.sh -> Local</b>');
+
+        $shellConfiguration = $this->shellConfiguration('pull');
+        $platformConfiguration = $this->platformConfiguration($configuration);
+
+        if ($directory) {
+            $this->rsync($directory, $shellConfiguration, $platformConfiguration, $environment, $dryRun);
+        }
+        if ($publish) {
+            $this->publish($shellConfiguration, $environment, $dryRun);
+        }
+        if ($database) {
+            $this->database($shellConfiguration, $environment, $dryRun);
+        }
+        if ($migrate) {
+            $this->migrate($shellConfiguration, $environment, $dryRun);
+        }
+        if ($flush) {
+            $this->flush($shellConfiguration, $environment, $dryRun);
+        }
+    }
+
+    /**
+     * Local -> platform.sh
      *
      * @param string $directory Source direction
      * @param bool $publish Run resource:publish on the remote serveur
      * @param bool $database Clone the database to the remote server
      * @param bool $migrate Run doctrine:migrate on the remote serveur
-     * @param bool $debug Show debug output
+     * @param bool $flush Run doctrine:migrate on the remote serveur
+     * @param bool $dryRun Dry run, don't execute commands
      * @param bool $snapshot Create a snapshot before synchronization
      * @param string $configuration
+     * @param string $environment
+     * @param bool $yes
      */
-    public function pushCommand(string $directory = null, bool $publish = false, bool $database = false, bool $migrate = false, bool $debug = false, bool $snapshot = false, string $configuration = '.platform.app.yaml', string $environment = 'master'): void
+    public function pushCommand(string $directory = null, bool $publish = false, bool $database = false, bool $migrate = false, bool $flush = false, bool $dryRun = false, bool $snapshot = false, string $configuration = '.platform.app.yaml', string $environment = 'master', bool $yes = false): void
     {
+        $this->askForUserAgreement($yes, '<info>Are you sure, all data on the remote target will be deleted ?</info> [yes|no]', '<b>Local -> platform.sh</b>');
 
-        $this->outputLine();
-        $this->outputLine('<b>Local -> platform.sh</b>');
-        $this->outputLine();
+        $shellConfiguration = $this->shellConfiguration('push');
+        $platformConfiguration = $this->platformConfiguration($configuration);
 
         if ($snapshot) {
-            $this->outputLine('    + <info>Create snapshot</info>');
-            $this->executeShellCommand('platform snapshot:create -e @ENVIRONMENT@', [
-                '@ENVIRONMENT@' => $environment
-            ], $debug);
+            $this->snapshot($environment, $dryRun);
         }
-
         if ($directory) {
-            $directory = trim($directory, '/');
-
-            $this->outputLine('    + <info>Sync directory %s</info>', [$directory]);
-
-            if (!\is_dir($directory)) {
-                $this->outputLine('    + <error>Directory "%s" not found</error>', [$directory]);
-                $this->quit(1);
-            }
-
-            $data = Yaml::parse(\FLOW_PATH_ROOT . '.platform.app.yaml');
-            $mounts = Arrays::getValueByPath($data, 'mounts') ?: [];
-            $mountPath = '/' . $directory;
-            if (!isset($mounts[$mountPath])) {
-                $this->outputLine('<error>Directory "%s" not mounted to a read write mound, check your %s</error>', [$directory, $configuration]);
-                $this->outputMounts($mounts);
-                $this->quit(1);
-            }
-
-            $os = \php_uname('s');
-
-            if (isset($this->rsyncCommands[$os])) {
-                $rsyncCommand = $this->rsyncCommands[$os];
-            } else {
-                $rsyncCommand = $this->rsyncCommands['*'];
-            }
-            $rsyncCommand = \str_replace(['@DIRECTORY@'], [$directory], $rsyncCommand);
-
-            $this->executeShellCommand($rsyncCommand, [
-                '@ENVIRONMENT@' => $environment
-            ], $debug);
+            $this->rsync($directory, $shellConfiguration, $platformConfiguration, $environment, $dryRun);
         }
-
         if ($publish) {
-            $this->outputLine('    + <info>Publish resources</info>');
-            $this->executeShellCommand('platform ssh -e @ENVIRONMENT@ "./flow resource:publish"', [
-                '@ENVIRONMENT@' => $environment
-            ], $debug);
+            $this->publish($shellConfiguration, $environment, $dryRun);
         }
         if ($database) {
-            $this->outputLine('    + <info>Clone database</info>');
-            $driver = \explode('_', $this->databasesConfiguration['driver'])[1];
-            if (!isset($this->dumpCommands[$driver])) {
-                $this->outputLine('<error>No dump command for the current driver (%s) </error>', [$this->databasesConfiguration['driver']]);
-            }
-
-            $dumpCommand = $this->replace([
-                '@HOST@' => $this->databasesConfiguration['host'],
-                '@DBNAME@' => $this->databasesConfiguration['dbname'],
-                '@USER@' => $this->databasesConfiguration['user'],
-                '@PASSWORD@' => $this->databasesConfiguration['password'],
-                '@CHARSET@' => $this->databasesConfiguration['charset'],
-            ], $this->dumpCommands[$driver]['*']);
-
-            $this->executeShellCommand('@DUMP_COMMAND@ > Data/Temporary/dump.sql', [
-                '@DUMP_COMMAND@' => $dumpCommand,
-                '@ENVIRONMENT@' => $environment
-            ], $debug);
-
-            $this->executeShellCommand('platform sql -e @ENVIRONMENT@ < Data/Temporary/dump.sql', [
-                '@ENVIRONMENT@' => $environment
-            ], $debug);
-            unlink('Data/Temporary/dump.sql');
+            $this->database($shellConfiguration, $environment, $dryRun);
         }
         if ($migrate) {
-            $this->outputLine('    + <info>Migrate database</info>');
-            $this->executeShellCommand('platform ssh -e @ENVIRONMENT@ "./flow doctrine:migrate"', [
-                '@ENVIRONMENT@' => $environment
-            ], $debug);
+            $this->migrate($shellConfiguration, $environment, $dryRun);
         }
+        if ($flush) {
+            $this->flush($shellConfiguration, $environment, $dryRun);
+        }
+    }
+
+    protected function platformConfiguration(string $configuration) :array
+    {
+        return Yaml::parse(\FLOW_PATH_ROOT . $configuration);
+    }
+
+    protected function shellConfiguration(string $type) :ShellCommands
+    {
+        $os = \php_uname('s');
+        $databaseDriver = \explode('_', $this->databasesConfiguration['driver'])[1];
+        return new ShellCommands($this->commandConfiguration[$type], $os, $databaseDriver);
+    }
+
+    protected function askForUserAgreement(bool $yes, string $question, string $message): void
+    {
+        $this->outputLine();
+        $this->outputLine($message);
+        $this->outputLine();
+
+        if (!$yes) {
+            $agree = $this->output->ask($question, 'no');
+            if ($agree !== 'yes') {
+                $this->quit(1);
+            }
+            $this->outputLine();
+        }
+    }
+
+    protected function flush(ShellCommands $shellConfiguration, string $environment, bool $dryRun): void
+    {
+        $this->outputLine('    + <info>Flush all caches</info>');
+        $this->executeShellCommand($shellConfiguration->flushCommand(), [
+            '@ENVIRONMENT@' => $environment
+        ], $dryRun);
+    }
+
+    protected function migrate(ShellCommands $shellConfiguration, string $environment, bool $dryRun): void
+    {
+        $this->outputLine('    + <info>Migrate database</info>');
+        $this->executeShellCommand($shellConfiguration->migrateCommand(), [
+            '@ENVIRONMENT@' => $environment
+        ], $dryRun);
+    }
+
+    protected function database(ShellCommands $shellConfiguration, string $environment, bool $dryRun): void
+    {
+        $this->outputLine('    + <info>Clone database</info>');
+
+        $dumpCommand = $this->replace([
+            '@HOST@' => $this->databasesConfiguration['host'],
+            '@DBNAME@' => $this->databasesConfiguration['dbname'],
+            '@USER@' => $this->databasesConfiguration['user'],
+            '@PASSWORD@' => $this->databasesConfiguration['password'],
+            '@CHARSET@' => $this->databasesConfiguration['charset'],
+        ], $shellConfiguration->dumpCommand());
+
+        $this->executeShellCommand('@DUMP_COMMAND@', [
+            '@DUMP_COMMAND@' => $dumpCommand,
+            '@ENVIRONMENT@' => $environment
+        ], $dryRun);
+
+        $this->executeShellCommand($shellConfiguration->restoreCommand(), [
+            '@HOST@' => $this->databasesConfiguration['host'],
+            '@DBNAME@' => $this->databasesConfiguration['dbname'],
+            '@USER@' => $this->databasesConfiguration['user'],
+            '@PASSWORD@' => $this->databasesConfiguration['password'],
+            '@CHARSET@' => $this->databasesConfiguration['charset'],
+            '@ENVIRONMENT@' => $environment
+        ], $dryRun);
+    }
+
+    protected function publish(ShellCommands $shellConfiguration, string $environment, bool $dryRun): void
+    {
+        $this->outputLine('    + <info>Publish resources</info>');
+        $this->executeShellCommand($shellConfiguration->publishCommand(), [
+            '@ENVIRONMENT@' => $environment
+        ], $dryRun);
+    }
+
+    protected function snapshot(string $environment, bool $dryRun): void
+    {
+        $this->outputLine('    + <info>Create snapshot</info>');
+        $this->executeShellCommand('platform snapshot:create -e @ENVIRONMENT@', [
+            '@ENVIRONMENT@' => $environment
+        ], $dryRun);
+    }
+
+    protected function rsync(string $directory, ShellCommands $shellConfiguration, array $platformConfiguration, string $environment, bool $dryRun): void
+    {
+        $directory = trim($directory, '/');
+
+        $this->outputLine('    + <info>Sync directory %s</info>', [$directory]);
+
+        if (!\is_dir($directory)) {
+            $this->outputLine('    + <error>Directory "%s" not found</error>', [$directory]);
+            $this->quit(1);
+        }
+
+        $mounts = Arrays::getValueByPath($platformConfiguration, 'mounts') ?: [];
+        $mountPath = '/' . $directory;
+        if (!isset($mounts[$mountPath])) {
+            $this->outputLine('<error>Directory "%s" not mounted to a read write mound, check your %s</error>', [$directory, $shellConfiguration]);
+            $this->outputMounts($mounts);
+            $this->quit(1);
+        }
+
+        $rsyncCommand = \str_replace(['@DIRECTORY@'], [$directory], $shellConfiguration->rsyncCommand());
+
+        $this->executeShellCommand($rsyncCommand, [
+            '@ENVIRONMENT@' => $environment
+        ], $dryRun);
     }
 
     /**
@@ -195,24 +283,26 @@ class PlatformCommandController extends CommandController
         $this->commandService->executeHooks($this->deployHooks, function (...$args) { $this->outputLine(...$args); } );
     }
 
-    protected function executeShellCommand(string $command, array $arguments = [], bool $debug = false): string
+    protected function executeShellCommand(string $command, array $arguments = [], bool $dryRun = false) :string
     {
         if ($arguments !== []) {
             $command = $this->replace($arguments, $command);
         }
 
-        if ($debug) {
-            $this->outputLine('    // Command: <comment>%s</comment>', [$command]);
+        if ($dryRun) {
+            $this->outputLine('    <comment>Command</comment>: %s', [$command]);
+            $this->outputLine();
+            return $command;
+        } else {
+            exec($command . ' 2> /dev/null', $output, $return);
+
+            if ($return !== 0) {
+                $this->outputLine('<error>Oups, the following command failed:</error> %s', [$command]);
+                $this->quit($return);
+            }
+
+            return trim(implode(\PHP_EOL, $output));
         }
-
-        exec($command . ' 2> /dev/null', $output, $return);
-
-        if ($return !== 0) {
-            $this->outputLine('<error>Oups, the following command failed:</error> %s', [$command]);
-            $this->quit($return);
-        }
-
-        return trim(implode(\PHP_EOL, $output));
     }
 
     protected function replace(array $search, string $string) {

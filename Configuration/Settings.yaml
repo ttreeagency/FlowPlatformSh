@@ -9,11 +9,42 @@ Ttree:
         'flow:cache:warmup': true
         'flow:doctrine:migrate': true
     commands:
-      rsync:
-        '*': 'rsync -az ./@DIRECTORY@/ `platform ssh -e @ENVIRONMENT@ --pipe`:/app/@DIRECTORY@'
-        'Darwin': 'rsync -az --iconv=utf-8-mac,utf-8 ./@DIRECTORY@/ `platform ssh -e @ENVIRONMENT@ --pipe`:/app/@DIRECTORY@'
-      dump:
-        'pgsql':
-          '*': 'PGPASSWORD=@PASSWORD@ pg_dump -c -b -d @DBNAME@ -U @USER@'
-        'mysql':
-          '*': 'mysqldump --host=@HOST@ -u@USER@ -p@PASSWORD@ @DBNAME@'
+      pull:
+        rsync:
+          '*': 'rsync -az `platform ssh -e @ENVIRONMENT@ --pipe`:/app/@DIRECTORY@ ./@DIRECTORY@/'
+        migrate:
+          '*': './flow doctrine:migrate'
+        publish:
+          '*': './flow resource:publish'
+        flush:
+          '*': './flow flow:cache:flush --force'
+        dump:
+          'pgsql':
+            '*': 'platform db:dump -f Data/Temporary/PlatformShDump-@ENVIRONMENT@.sql -e @ENVIRONMENT@ --yes'
+          'mysql':
+            '*': 'platform db:dump -f Data/Temporary/PlatformShDump-@ENVIRONMENT@.sql -e @ENVIRONMENT@ --yes'
+        restore:
+          'pgsql':
+            '*': 'cat Data/Temporary/PlatformShDump-@ENVIRONMENT@.sql | PGPASSWORD=@PASSWORD@ psql --host=@HOST@ -U@USER@ @DBNAME@'
+          'mysql':
+            '*': 'cat Data/Temporary/PlatformShDump-@ENVIRONMENT@.sql | mysql --host=@HOST@ -u@USER@ -p@PASSWORD@ @DBNAME@'
+      push:
+        rsync:
+          '*': 'rsync -az ./@DIRECTORY@/ `platform ssh -e @ENVIRONMENT@ --pipe`:/app/@DIRECTORY@'
+          'Darwin': 'rsync -az --iconv=utf-8-mac,utf-8 ./@DIRECTORY@/ `platform ssh -e @ENVIRONMENT@ --pipe`:/app/@DIRECTORY@'
+        migrate:
+          '*': 'platform ssh -e @ENVIRONMENT@ "./flow doctrine:migrate"'
+        publish:
+          '*': 'platform ssh -e @ENVIRONMENT@ "./flow resource:publish"'
+        flush:
+          '*': 'platform ssh -e @ENVIRONMENT@ "./flow flow:cache:flush --force"'
+        dump:
+          'pgsql':
+            '*': 'PGPASSWORD=@PASSWORD@ pg_dump -c -b -d @DBNAME@ -U @USER@ > Data/Temporary/PlatformShDump-@ENVIRONMENT@.sql'
+          'mysql':
+            '*': 'mysqldump --host=@HOST@ -u@USER@ -p@PASSWORD@ @DBNAME@ > Data/Temporary/PlatformShDump-@ENVIRONMENT@.sql'
+        restore:
+          'pgsql':
+            '*': 'platform sql -e @ENVIRONMENT@ < Data/Temporary/PlatformShDump-@ENVIRONMENT@.sql'
+          'mysql':
+            '*': 'platform sql -e @ENVIRONMENT@ < Data/Temporary/PlatformShDump-@ENVIRONMENT@.sql'

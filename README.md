@@ -33,13 +33,13 @@ You can set the value to ```false``` to disable a command. If the value is an ar
 
 	Ttree:
 	  FlowPlatformSh:
-		deployHooks:
-		  commands:
-			'ttree.neosplatformsh:platform:createadminaccount':
-			  username: 'admin'
-			  password: 'changeme'
-			'ttree.neosplatformsh:platform:importsitepackage':
-			  package: 'Neos.Demo'
+       deployHooks:
+         commands:
+          'ttree.neosplatformsh:platform:createadminaccount':
+            username: 'admin'
+            password: 'changeme'
+          'ttree.neosplatformsh:platform:importsitepackage':
+            package: 'Neos.Demo'
 
 Check that your ```.platform.app.yaml``` execute ```php flow platform:build``` and ```php flow platform:build``` in the respective hook.
 
@@ -96,7 +96,7 @@ Then you can edit your ```Settings.yaml``` to use the new env variables:
             password: '%env:DATABASE_PASSWORD%'
             host: '%env:DATABASE_HOST%'
 
-## Push local project data to platform.sh
+## Push local data to platform.sh
 
 You can sync a local project data (resources and databases) to platform with the following command:
 
@@ -112,6 +112,12 @@ The options ```--snapshot``` create a snapshot of the current platform environem
 
 The options ```--environment```, default ```master```, allow to target specific platform environment.
 
+The options ```--flush``` flush all remote caches after the synchronization.
+
+The options ```--dry-run``` preview the commands and execute nothing.
+
+The options ```--yes``` non interactive mode.
+
 **Warning**: Currently we push only files and databases, if you use ElasticSearch you need to rebuild the index manually.
 
 You should see this output:
@@ -124,6 +130,38 @@ You should see this output:
         + Clone database
         + Migrate database
 
+## Pull data from platform.sh to your local setup
+
+You can sync a local project data (resources and databases) from a platform environment with the following command:
+
+    ./flow platform:pull --directory Data/Persistent --publish --database --migrate --environment master
+    
+You can provide the path to your local ```.platform.app.yaml``` with the paramater ```--configuration```. 
+
+The options ```--publish``` run the resources publishing after the rsync command on the remote server.
+
+The options ```--database``` and ```--migrate``` clone the remote database and run migration on the local server.
+
+The options ```--environment```, default ```master```, allow to target specific platform environment.
+
+The options ```--flush``` flush all local caches after the synchronization.
+
+The options ```--dry-run``` preview the commands and execute nothing.
+
+The options ```--yes``` non interactive mode.
+
+**Warning**: Currently we pull only files and databases, if you use ElasticSearch you need to rebuild the index manually.
+
+You should see this output:
+
+    platform.sh -> Local
+
+        + Sync directory Data/Persistent
+        + Publish resources
+        + Clone database
+        + Migrate database
+        + Flush all caches
+
 ### I use docker locally to host my database, the push command failed
 
 You can use a custom dump command, by editing your ```Settings.yaml```, by example for PostgreSQL:
@@ -131,10 +169,15 @@ You can use a custom dump command, by editing your ```Settings.yaml```, by examp
 	Ttree:
       FlowPlatformSh:
         commands:
-          'dump':
-            'pgsql':
-              '*': 'docker exec -e "PGPASSWORD=@PASSWORD@" -t [docker-container-name] pg_dump -c -b -d @DBNAME@ -U @USER@'
-
+          push:
+            dump:
+              pgsql:
+                '*': 'docker exec -e "PGPASSWORD=@PASSWORD@" -t [docker-container-name] pg_dump -c -b -d @DBNAME@ -U @USER@ > Data/Temporary/PlatformShDump-@ENVIRONMENT@.sql'
+          pull:
+            restore:
+              pgsql:
+                '*': 'cat Data/Temporary/PlatformShDump-@ENVIRONMENT@.sql | docker exec -e "PGPASSWORD=@PASSWORD@" -i [docker-container-name] psql --host=@HOST@ -U@USER@ @DBNAME@'
+                      
 Replace ```[docker-container-name]``` by the name or the identifier of the PostgreSQL container.
 
 ## Acknowledgments
