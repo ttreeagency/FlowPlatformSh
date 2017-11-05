@@ -11,7 +11,7 @@ Ttree:
     commands:
       pull:
         rsync:
-          '*': 'rsync -az `platform ssh -e @ENVIRONMENT@ --pipe`:/app/@DIRECTORY@ ./@DIRECTORY@/'
+          '*': 'rsync -az `platform ssh -e @ENVIRONMENT@ --pipe`:/app/@DIRECTORY@/ ./@DIRECTORY@'
         migrate:
           '*': './flow doctrine:migrate'
         publish:
