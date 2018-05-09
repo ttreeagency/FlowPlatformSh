@@ -93,17 +93,17 @@ class PlatformCommandController extends CommandController
         $shellConfiguration = $this->shellConfiguration('pull');
         $platformConfiguration = $this->platformConfiguration($configuration);
 
-        if ($directory) {
-            $this->rsync($directory, $shellConfiguration, $platformConfiguration, $environment, $dryRun);
-        }
-        if ($publish) {
-            $this->publish($shellConfiguration, $environment, $dryRun);
-        }
         if ($database) {
             $this->database($shellConfiguration, $environment, $dryRun);
         }
         if ($migrate) {
             $this->migrate($shellConfiguration, $environment, $dryRun);
+        }
+        if ($directory) {
+            $this->rsync($directory, $shellConfiguration, $platformConfiguration, $environment, $dryRun);
+        }
+        if ($publish) {
+            $this->publish($shellConfiguration, $environment, $dryRun);
         }
         if ($flush) {
             $this->flush($shellConfiguration, $environment, $dryRun);
@@ -137,14 +137,14 @@ class PlatformCommandController extends CommandController
         if ($directory) {
             $this->rsync($directory, $shellConfiguration, $platformConfiguration, $environment, $dryRun);
         }
-        if ($publish) {
-            $this->publish($shellConfiguration, $environment, $dryRun);
-        }
         if ($database) {
             $this->database($shellConfiguration, $environment, $dryRun);
         }
         if ($migrate) {
             $this->migrate($shellConfiguration, $environment, $dryRun);
+        }
+        if ($publish) {
+            $this->publish($shellConfiguration, $environment, $dryRun);
         }
         if ($flush) {
             $this->flush($shellConfiguration, $environment, $dryRun);
@@ -294,7 +294,7 @@ class PlatformCommandController extends CommandController
             $this->outputLine();
             return $command;
         } else {
-            exec($command . ' 2> /dev/null', $output, $return);
+            exec($command . '', $output, $return);
 
             if ($return !== 0) {
                 $this->outputLine('<error>Oups, the following command failed:</error> %s', [$command]);
