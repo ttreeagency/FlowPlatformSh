@@ -271,6 +271,7 @@ class PlatformCommandController extends CommandController
     {
         $this->outputLine('<b>Run build hook commands</b>');
         $this->commandService->executeHooks($this->buildHooks, function (...$args) { $this->outputLine(...$args); } );
+        $this->sendAndExit(0);
     }
 
     /**
